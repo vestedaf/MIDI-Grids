@@ -1,3 +1,22 @@
+# Midi Grids - Building on Gritty Grids for full MIDI I/O
+
+MIDI I/O Mod (PD1 TX over Clock Jack)
+
+This fork adds MIDI output while preserving the Sonic Insurgence MIDI clock/input behavior.
+* The clock input (PD1) is intentionally disabled and repurposed as hardware UART TX (31250 baud).
+* MIDI is transmitted over the former clock jack as TTL serial (tip = TX, sleeve = GND).
+* External MIDI clock (via MIDI IN) and the internal tempo knob both continue to function normally.
+* A simple external adapter (resistors + optocoupler) can convert this signal to standard DIN MIDI.
+
+This approach avoids pin remapping and bit-banged output, providing stable timing using the AVR’s hardware
+
+## Goals:
+* Make Accent Outputs behave more like a velocity curve
+  * Expose as menu option?
+* Generate velocity based on accents
+* Additional banks of drum patterns as seen in Truchets
+  * Expose as menu option
+
 # Gritty Grids - An Improved MIDI Implementation for Grids
 Grids is a topographic (drum) sequencer for Eurorack modular synthesizers 
 developed by Mutable Instruments.

@@ -66,7 +66,8 @@ enum Parameter {
   PARAMETER_SWING,
   PARAMETER_GATE_MODE,
   PARAMETER_OUTPUT_MODE,
-  PARAMETER_CLOCK_OUTPUT
+  PARAMETER_CLOCK_OUTPUT,
+  PARAMETER_BANK
 };
 
 uint32_t tap_duration = 0;
@@ -142,6 +143,11 @@ inline void UpdateLeds() {
         if (pattern_generator.gate_mode()) {
           pattern |= LED_ALL;
         }
+        break;
+      
+      case PARAMETER_BANK:
+        // Show bank number using LEDs: 1=BD, 2=SD, 3=HH
+        pattern |= (LED_BD << pattern_generator.bank());
         break;
     }
   }
@@ -481,6 +487,12 @@ void ScanPots() {
           case ADC_CHANNEL_RANDOMNESS_CV:
             parameter = PARAMETER_CLOCK_OUTPUT;
             pattern_generator.set_output_clock(!(value & 0x80));
+            break;
+          
+          case ADC_CHANNEL_TEMPO:
+            parameter = PARAMETER_BANK;
+            // Map pot value to bank 0, 1, or 2
+            pattern_generator.set_bank((255 - value) / 85);
             break;
             
         }

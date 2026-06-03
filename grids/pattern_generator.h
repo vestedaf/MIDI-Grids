@@ -190,6 +190,14 @@ class PatternGenerator {
     options_.gate_mode = gate_mode;
   }
   
+  static uint8_t bank() { return bank_; }
+  static void set_bank(uint8_t bank) {
+    if (bank > 2) {
+      bank = 2;
+    }
+    bank_ = bank;
+  }
+  
   static inline void IncrementPulseCounter() {
     ++pulse_duration_counter_;
     // Zero all pulses after 1ms.
@@ -271,6 +279,7 @@ class PatternGenerator {
   static uint8_t pulse_duration_counter_;
   
   static uint8_t factory_testing_;
+  static uint8_t bank_;
   
   static PatternGeneratorSettings settings_;
   

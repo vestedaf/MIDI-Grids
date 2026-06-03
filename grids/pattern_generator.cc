@@ -69,6 +69,9 @@ PatternGeneratorSettings PatternGenerator::settings_;
 /* static */
 uint8_t PatternGenerator::factory_testing_;
 
+/* static */
+uint8_t PatternGenerator::bank_;
+
 /* extern */
 PatternGenerator pattern_generator;
 
@@ -190,6 +193,10 @@ void PatternGenerator::EvaluateEuclidean() {
 void PatternGenerator::LoadSettings() {
   options_.unpack(eeprom_read_byte(NULL));
   factory_testing_ = eeprom_read_byte((uint8_t*)(1)) + 1;
+  bank_ = eeprom_read_byte((uint8_t*)(2));
+  if (bank_ > 2) {
+    bank_ = 0;
+  }
 }
 
 /* static */
@@ -200,6 +207,7 @@ void PatternGenerator::SaveSettings() {
     factory_testing_ = 5;
   }
   eeprom_write_byte((uint8_t*)(1), factory_testing_);
+  eeprom_write_byte((uint8_t*)(2), bank_);
 }
 
 /* static */

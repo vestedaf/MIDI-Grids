@@ -15,11 +15,11 @@ This approach avoids pin remapping and bit-banged output, providing stable timin
 ## Implemented Features:
 * **MIDI Velocity from Accents**: Normal notes output velocity 100, accented notes output velocity 127
 * **Open Hi-Hat on Accents**: Accented hi-hat notes play one semitone higher (open hi-hat sound)
-* **Simplified Implementation**: No menu exposure needed - velocity behavior is automatic based on pattern accent levels
-
-## Future Goals:
-* Additional banks of drum patterns as seen in Truchets
-  * Expose as menu option
+* **Bank Selection**: Three banks of drum patterns (0, 1, 2) accessible via settings menu
+  * Long-press TAP button to enter settings mode
+  * Turn Clock/Tempo knob to select bank (LED indicators: BD=bank 1, SD=bank 2, HH=bank 3)
+  * Long-press TAP again to save and exit
+  * Bank selection persists in EEPROM across power cycles
 
 # Gritty Grids - An Improved MIDI Implementation for Grids
 Grids is a topographic (drum) sequencer for Eurorack modular synthesizers 
@@ -71,6 +71,19 @@ If you want to go back to the original stock firmware flash
 
 
 ### Gritty Grids User Manual
+
+#### Bank Selection
+Grids now supports three banks of drum patterns (banks 0, 1, and 2):
+1. Long-press the TAP button to enter settings mode (Clock LED lights up)
+2. Turn the Clock/Tempo knob to select a bank:
+   * BD LED = Bank 1 (bank 0)
+   * SD LED = Bank 2 (bank 1)
+   * HH LED = Bank 3 (bank 2)
+3. Long-press TAP again to save the bank selection and exit settings mode
+
+The selected bank is saved to EEPROM and will be restored on power-up.
+
+#### MIDI Clock Synchronization
 Enter the external clocking mode by turning the tempo knob to 
 its minimum position, thus enabling Grids to be clocked by either external clock pulses or by MIDI messages. After receiving a  MIDI Start or MIDI Continue 
 message Grids switches into a "clocked_by_midi" mode. In this mode its 

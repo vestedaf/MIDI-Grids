@@ -66,13 +66,7 @@ enum Parameter {
   PARAMETER_SWING,
   PARAMETER_GATE_MODE,
   PARAMETER_OUTPUT_MODE,
-  PARAMETER_CLOCK_OUTPUT,
-  PARAMETER_BD_VEL_MIN,
-  PARAMETER_BD_VEL_MAX,
-  PARAMETER_SD_VEL_MIN,
-  PARAMETER_SD_VEL_MAX,
-  PARAMETER_HH_VEL_MIN,
-  PARAMETER_HH_VEL_MAX
+  PARAMETER_CLOCK_OUTPUT
 };
 
 uint32_t tap_duration = 0;
@@ -149,57 +143,29 @@ inline void UpdateLeds() {
           pattern |= LED_ALL;
         }
         break;
-      
-      case PARAMETER_BD_VEL_MIN:
-      case PARAMETER_SD_VEL_MIN:
-      case PARAMETER_HH_VEL_MIN:
-        pattern |= LED_BD;  // Show BD LED for min velocity
-        break;
-        
-      case PARAMETER_BD_VEL_MAX:
-      case PARAMETER_SD_VEL_MAX:
-      case PARAMETER_HH_VEL_MAX:
-        pattern |= LED_HH;  // Show HH LED for max velocity
-        break;
     }
   }
   leds.Write(pattern);
 }
 
-inline uint8_t ScaleVelocity(uint8_t accent_level, uint8_t min_vel, uint8_t max_vel) {
-  // Linear scaling from accent_level (0-255) to velocity (min_vel-max_vel)
-  if (accent_level == 0) return min_vel;
-  uint16_t range = max_vel - min_vel;
-  uint16_t scaled = (uint16_t)accent_level * range / 255;
-  return min_vel + (uint8_t)scaled;
-}
-
 inline void BufferMidiMessages(uint8_t state, uint8_t rising, uint8_t falling)
 {
-  PatternGeneratorSettings* settings = pattern_generator.mutable_settings();
-  
-  // Note On messages (rising edges with velocity based on accent levels)
+  // Note On messages with simple velocity: 100 normal, 127 accented
   if (rising & 0x01) { // BD
     uint8_t accent = pattern_generator.accent_level(0);
-    uint8_t velocity = ScaleVelocity(accent, 
-                                     settings->velocity.min[0], 
-                                     settings->velocity.max[0]);
+    uint8_t velocity = (accent > 192) ? 127 : 100;
     grids::MidiDevice::BufferNoteOn(grids::MIDI_CHANNEL, grids::BD_NOTE, velocity);
   }
   if (rising & 0x02) { // SD
     uint8_t accent = pattern_generator.accent_level(1);
-    uint8_t velocity = ScaleVelocity(accent, 
-                                     settings->velocity.min[1], 
-                                     settings->velocity.max[1]);
+    uint8_t velocity = (accent > 192) ? 127 : 100;
     grids::MidiDevice::BufferNoteOn(grids::MIDI_CHANNEL, grids::SD_NOTE, velocity);
   }
   if (rising & 0x04) { // HH
     uint8_t accent = pattern_generator.accent_level(2);
-    uint8_t velocity = ScaleVelocity(accent, 
-                                     settings->velocity.min[2], 
-                                     settings->velocity.max[2]);
-    // Use accent note if velocity is high
-    uint8_t note = (velocity > 100) ? grids::HH_ACCENT_NOTE : grids::HH_NOTE;
+    uint8_t velocity = (accent > 192) ? 127 : 100;
+    // Use open hi-hat (one note higher) if accented
+    uint8_t note = (accent > 192) ? (grids::HH_NOTE + 1) : grids::HH_NOTE;
     grids::MidiDevice::BufferNoteOn(grids::MIDI_CHANNEL, note, velocity);
   }
   
@@ -212,9 +178,9 @@ inline void BufferMidiMessages(uint8_t state, uint8_t rising, uint8_t falling)
       grids::MidiDevice::BufferNoteOff(grids::MIDI_CHANNEL, grids::SD_NOTE);
     }
     if (falling & 0x04) {
-      // Note off for both normal and accent HH
+      // Note off for both normal and open HH
       grids::MidiDevice::BufferNoteOff(grids::MIDI_CHANNEL, grids::HH_NOTE);
-      grids::MidiDevice::BufferNoteOff(grids::MIDI_CHANNEL, grids::HH_ACCENT_NOTE);
+      grids::MidiDevice::BufferNoteOff(grids::MIDI_CHANNEL, grids::HH_NOTE + 1);
     }
   }
 }
@@ -517,44 +483,6 @@ void ScanPots() {
             pattern_generator.set_output_clock(!(value & 0x80));
             break;
             
-          case ADC_CHANNEL_TEMPO:
-            // Use tempo pot for velocity settings in config mode
-            // Cycle through: BD min, BD max, SD min, SD max, HH min, HH max
-            {
-              static uint8_t vel_param_index = 0;
-              vel_param_index = (vel_param_index + 1) % 6;
-              
-              PatternGeneratorSettings* settings = pattern_generator.mutable_settings();
-              uint8_t scaled_value = value >> 1;  // Scale to 0-127
-              
-              switch (vel_param_index) {
-                case 0:
-                  parameter = PARAMETER_BD_VEL_MIN;
-                  settings->velocity.min[0] = scaled_value;
-                  break;
-                case 1:
-                  parameter = PARAMETER_BD_VEL_MAX;
-                  settings->velocity.max[0] = scaled_value;
-                  break;
-                case 2:
-                  parameter = PARAMETER_SD_VEL_MIN;
-                  settings->velocity.min[1] = scaled_value;
-                  break;
-                case 3:
-                  parameter = PARAMETER_SD_VEL_MAX;
-                  settings->velocity.max[1] = scaled_value;
-                  break;
-                case 4:
-                  parameter = PARAMETER_HH_VEL_MIN;
-                  settings->velocity.min[2] = scaled_value;
-                  break;
-                case 5:
-                  parameter = PARAMETER_HH_VEL_MAX;
-                  settings->velocity.max[2] = scaled_value;
-                  break;
-              }
-            }
-            break;
         }
       }
     }

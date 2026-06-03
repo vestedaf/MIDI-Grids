@@ -190,19 +190,6 @@ void PatternGenerator::EvaluateEuclidean() {
 void PatternGenerator::LoadSettings() {
   options_.unpack(eeprom_read_byte(NULL));
   factory_testing_ = eeprom_read_byte((uint8_t*)(1)) + 1;
-  
-  // Load velocity settings from EEPROM (starting at address 2)
-  for (uint8_t i = 0; i < kNumParts; ++i) {
-    uint8_t min_vel = eeprom_read_byte((uint8_t*)(2 + i * 2));
-    uint8_t max_vel = eeprom_read_byte((uint8_t*)(3 + i * 2));
-    
-    // Initialize with defaults if EEPROM is uninitialized (0xFF)
-    if (min_vel == 0xFF) min_vel = 40;
-    if (max_vel == 0xFF) max_vel = 127;
-    
-    settings_.velocity.min[i] = min_vel;
-    settings_.velocity.max[i] = max_vel;
-  }
 }
 
 /* static */
@@ -213,12 +200,6 @@ void PatternGenerator::SaveSettings() {
     factory_testing_ = 5;
   }
   eeprom_write_byte((uint8_t*)(1), factory_testing_);
-  
-  // Save velocity settings to EEPROM
-  for (uint8_t i = 0; i < kNumParts; ++i) {
-    eeprom_write_byte((uint8_t*)(2 + i * 2), settings_.velocity.min[i]);
-    eeprom_write_byte((uint8_t*)(3 + i * 2), settings_.velocity.max[i]);
-  }
 }
 
 /* static */

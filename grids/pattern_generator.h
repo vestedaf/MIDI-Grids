@@ -47,18 +47,12 @@ struct DrumsSettings {
   uint8_t randomness;
 };
 
-struct VelocitySettings {
-  uint8_t min[kNumParts];  // Minimum velocity per instrument
-  uint8_t max[kNumParts];  // Maximum velocity per instrument
-};
-
 struct PatternGeneratorSettings {
   union Options {
     DrumsSettings drums;
     uint8_t euclidean_length[kNumParts];
   } options;
   uint8_t density[kNumParts];
-  VelocitySettings velocity;
 };
 
 enum OutputMode {

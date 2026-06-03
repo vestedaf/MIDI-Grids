@@ -55,15 +55,13 @@ using namespace avrlib;
 using namespace grids;
 
 Leds leds;
-// Inputs inputs;
 ResetInput reset_input;
 ButtonInput button_input;
 ClockInput clock_input;
 
 AdcInputScanner adc;
 ShiftRegister shift_register;
-// MidiInput midi;
-MidiIO midi;
+MidiIO midi; // MIDI IN only
 
 enum Parameter
 {
@@ -243,17 +241,16 @@ uint8_t ticks_granularity[] = {6, 3, 1};
 
 inline void HandleClockResetInputs()
 {
-  // static uint8_t previous_inputs;
-  static bool previous_clock_value;
   static bool previous_reset_value;
 
-  // uint8_t inputs_value = ~inputs.Read();
-  bool clock_value = ~clock_input.Read();
+  // Clock input (PD1) is disabled - pin is used for MIDI TX
   bool reset_value = reset_input.Read();
   uint8_t num_ticks = 0;
   uint8_t increment = ticks_granularity[pattern_generator.clock_resolution()];
 
   // CLOCK
+  // External clock input is disabled (PD1 used for MIDI TX)
+  // Only MIDI clock or internal clock (tempo knob) are used
   if (clock.bpm() < 40 && !clock.locked())
   {
     if (!external_clock)
@@ -261,17 +258,7 @@ inline void HandleClockResetInputs()
       external_clock = 1;
       mute = 1; // activate mute when entering external clock mode
     }
-    if ((clock_value) && !(previous_clock_value))
-    {
-      if (!clocked_by_midi)
-      {
-        num_ticks = increment;
-      }
-    }
-    if (!(clock_value) && (previous_clock_value))
-    {
-      pattern_generator.ClockFallingEdge();
-    }
+    // Process MIDI clock messages
     if (midi.readable())
     {
       uint8_t byte = midi.ImmediateRead();
@@ -369,8 +356,6 @@ inline void HandleClockResetInputs()
       }
     }
   }
-  // previous_inputs = inputs_value;
-  previous_clock_value = clock_value;
   previous_reset_value = reset_value;
 
   if (num_ticks)
@@ -582,33 +567,6 @@ void ScanPots()
   }
 }
 
-void TestMidiOutput()
-{
-  // Simple direct MIDI test - Bass Drum note
-  midi.Write(0x99); // Note On, Channel 10
-  midi.Write(0x24); // Bass Drum
-  midi.Write(0x7F); // Full velocity
-  _delay_ms(500);   // Wait half second
-  midi.Write(0x89); // Note Off, Channel 10
-  midi.Write(0x24); // Bass Drum
-  midi.Write(0x00); // Zero velocity
-
-  // simpler
-  // midi.Write(0x90); // Just Note On, channel 1
-  //_delay_ms(1000);  // Longer delay
-
-  // send a stream of simple alternating 0101 0101 and 1010 1010
-  /*
-  while (!(UCSR0A & (1 << UDRE0)))
-    ;
-  UDR0 = 0x55; // Alternating 0101 0101
-  _delay_ms(100);
-  while (!(UCSR0A & (1 << UDRE0)))
-    ;
-  UDR0 = 0xAA; // Alternating 1010 1010
-  _delay_ms(100);
-  */
-}
 
 void Init()
 {
@@ -618,15 +576,12 @@ void Init()
 #endif
 
   sei();
-  UCSR0B = 0; // Disable UART before configuration
-
-  // Configure UART for MIDI
-  UCSR0C = (1 << UCSZ01) | (1 << UCSZ00); // 8 data bits, 1 stop bit, no parity
-  UBRR0 = (F_CPU / 16 / 31250) - 1;       // Set baud rate for 31250
-  UCSR0B = (1 << TXEN0);                  // Enable transmitter
-
-  // Don't call midi.Init() as we're configuring UART directly
-  // grids::MidiDevice::Init(midi);
+  
+  // Initialize MIDI OUT (TX on PD1)
+  grids::MidiDevice::Init();
+  
+  // Initialize MIDI IN for clock sync
+  midi.Init();
 
   leds.set_mode(DIGITAL_OUTPUT);
   reset_input.EnablePullUpResistor();
@@ -645,19 +600,6 @@ void Init()
   TCCR2B = 3;
   OCR2A = kUpdatePeriod - 1;
   TIMSK2 |= _BV(1);
-
-  // Test MIDI output
-  /*
-  TestMidiOutput();
-  TestMidiOutput();
-  TestMidiOutput();
-  TestMidiOutput();
-
-  while (true)
-  {
-    _delay_ms(1000);
-  }
-  */
 }
 
 int main(void)
@@ -671,8 +613,8 @@ int main(void)
     // Use any spare cycles to read the CVs and update the potentiometers
     ScanPots();
 
-    // Transmit MIDI messages from the buffer
-    cli(); // Disable interrupts to safely access buffer indices
+    // Transmit MIDI messages from the buffer (non-blocking)
+    cli(); // Disable interrupts to safely check buffer state
     bool has_messages = (buffer_tail != buffer_head);
     sei(); // Re-enable interrupts
 

@@ -27,10 +27,21 @@ namespace grids
   class MidiDevice
   {
   public:
-    // Initialize the static MidiIO instance
-    static inline void Init(MidiIO &midi_instance)
+    // Initialize UART for MIDI TX on PD1
+    static inline void Init()
     {
-      midi_ = &midi_instance;
+      // Configure UART for MIDI output (31250 baud, 8N1)
+      UBRR0 = 31; // 31250 baud at 16MHz: (16000000 / 16 / 31250) - 1 = 31
+      UCSR0A = 0;
+      UCSR0B = (1 << TXEN0); // Enable transmitter only
+      UCSR0C = (1 << UCSZ01) | (1 << UCSZ00); // 8 data bits, 1 stop bit, no parity
+    }
+
+    // Send a single MIDI byte directly (non-blocking check)
+    static inline void Send(uint8_t byte)
+    {
+      while (!(UCSR0A & (1 << UDRE0))); // Wait for transmit buffer to be ready
+      UDR0 = byte;
     }
 
     // Buffer a single byte into the circular buffer
@@ -45,12 +56,12 @@ namespace grids
       // Else: Buffer overflow, notes will be dropped
     }
 
-    // Send all buffered MIDI bytes
+    // Send all buffered MIDI bytes using direct UART
     static inline void SendBuffer()
     {
       while (buffer_tail != buffer_head)
       {
-        midi_->Write(output_buffer[buffer_tail]);
+        Send(output_buffer[buffer_tail]);
         buffer_tail = (buffer_tail + 1) % MIDI_BUFFER_SIZE;
       }
     }
@@ -83,8 +94,6 @@ namespace grids
       BufferMidiMessage(0x80 | channel, HH_ACCENT_NOTE, 0);
     }
 
-  private:
-    static MidiIO *midi_;
   };
 
 } // namespace grids

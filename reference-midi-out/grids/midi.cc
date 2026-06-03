@@ -2,6 +2,6 @@
 
 namespace grids {
 
-MidiIO* MidiDevice::midi_ = NULL;
+// No static members needed anymore
 
 }  // namespace grids

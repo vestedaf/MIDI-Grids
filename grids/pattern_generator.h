@@ -47,12 +47,18 @@ struct DrumsSettings {
   uint8_t randomness;
 };
 
+struct VelocitySettings {
+  uint8_t min[kNumParts];  // Minimum velocity per instrument
+  uint8_t max[kNumParts];  // Maximum velocity per instrument
+};
+
 struct PatternGeneratorSettings {
   union Options {
     DrumsSettings drums;
     uint8_t euclidean_length[kNumParts];
   } options;
   uint8_t density[kNumParts];
+  VelocitySettings velocity;
 };
 
 enum OutputMode {
@@ -162,6 +168,9 @@ class PatternGenerator {
     return state_;
   }
   static inline uint8_t step() { return step_; }
+  static inline uint8_t accent_level(uint8_t part) {
+    return part < kNumParts ? part_accent_level_[part] : 0;
+  }
   
   static inline bool swing() { return options_.swing; }
   static int8_t swing_amount();
@@ -263,6 +272,7 @@ class PatternGenerator {
   static uint8_t state_;
   static uint8_t previous_state_;
   static uint8_t part_perturbation_[kNumParts];
+  static uint8_t part_accent_level_[kNumParts];
 
   static uint8_t pulse_duration_counter_;
   

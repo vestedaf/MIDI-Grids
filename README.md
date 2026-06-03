@@ -2,18 +2,22 @@
 
 MIDI I/O Mod (PD1 TX over Clock Jack)
 
-This fork adds MIDI output while preserving the Sonic Insurgence MIDI clock/input behavior.
+This fork adds MIDI output with velocity support while preserving the Sonic Insurgence MIDI clock/input behavior.
 * The clock input (PD1) is intentionally disabled and repurposed as hardware UART TX (31250 baud).
 * MIDI is transmitted over the former clock jack as TTL serial (tip = TX, sleeve = GND).
 * External MIDI clock (via MIDI IN) and the internal tempo knob both continue to function normally.
 * A simple external adapter (resistors + optocoupler) can convert this signal to standard DIN MIDI.
+* **MIDI velocity is generated from pattern accents**: Normal notes = velocity 100, accented notes = velocity 127
+* **Accented hi-hats play open hi-hat**: Sends MIDI note one semitone higher for accented HH triggers
 
 This approach avoids pin remapping and bit-banged output, providing stable timing using the AVR’s hardware
 
-## Goals:
-* Make Accent Outputs behave more like a velocity curve
-  * Expose as menu option?
-* Generate velocity based on accents
+## Implemented Features:
+* **MIDI Velocity from Accents**: Normal notes output velocity 100, accented notes output velocity 127
+* **Open Hi-Hat on Accents**: Accented hi-hat notes play one semitone higher (open hi-hat sound)
+* **Simplified Implementation**: No menu exposure needed - velocity behavior is automatic based on pattern accent levels
+
+## Future Goals:
 * Additional banks of drum patterns as seen in Truchets
   * Expose as menu option
 

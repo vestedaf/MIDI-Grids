@@ -47,6 +47,7 @@
 #include "grids/clock.h"
 #include "grids/hardware_config.h"
 #include "grids/pattern_generator.h"
+#include "grids/midi.h"
 
 using namespace avrlib;
 using namespace grids;
@@ -146,6 +147,29 @@ inline void UpdateLeds() {
   leds.Write(pattern);
 }
 
+inline void BufferMidiMessages(uint8_t state)
+{
+  if (state & 0x01)
+  { // BD
+    grids::MidiDevice::BufferNote(grids::MIDI_CHANNEL, grids::BD_NOTE, 0x7f);
+  }
+  if (state & 0x02)
+  { // SD
+    grids::MidiDevice::BufferNote(grids::MIDI_CHANNEL, grids::SD_NOTE, 0x7f);
+  }
+  if (state & 0x04)
+  { // HH
+    if (state & 0x20)
+    {
+      grids::MidiDevice::BufferNote(grids::MIDI_CHANNEL, grids::HH_ACCENT_NOTE, 0x7f);
+    }
+    else
+    {
+      grids::MidiDevice::BufferNote(grids::MIDI_CHANNEL, grids::HH_NOTE, 0x7f);
+    }
+  }
+}
+
 inline void UpdateShiftRegister() {
   static uint8_t previous_state = 0;
   uint8_t state = pattern_generator.state();
@@ -162,6 +186,10 @@ inline void UpdateShiftRegister() {
   if (state != previous_state) {
     previous_state = state;
     shift_register.Write(state);
+    
+    // Buffer MIDI messages for triggers
+    BufferMidiMessages(state);
+    
     if (!state) {
       // Switch off the LEDs, but not now.
       led_off_timer = 200;
@@ -179,23 +207,21 @@ inline void HandleClockResetInputs() {
   static uint8_t previous_inputs;
   
   uint8_t inputs_value = ~inputs.Read();
+  // Disable clock input (PD1) - it's used for MIDI TX
+  inputs_value &= ~INPUT_CLOCK;
+  
   uint8_t num_ticks = 0;
   uint8_t increment = ticks_granularity[pattern_generator.clock_resolution()];
   
   // CLOCK
+  // External clock input is disabled (PD1 used for MIDI TX)
+  // Only MIDI clock or internal clock (tempo knob) are used
   if (clock.bpm() < 40 && !clock.locked()) {
     if (!external_clock) {
       external_clock = 1;
       mute = 1;			// activate mute when entering external clock mode
     }
-    if ((inputs_value & INPUT_CLOCK) && !(previous_inputs & INPUT_CLOCK)) {
-      if (!clocked_by_midi) {
-        num_ticks = increment;
-      }
-    }
-    if (!(inputs_value & INPUT_CLOCK) && (previous_inputs & INPUT_CLOCK)) {
-      pattern_generator.ClockFallingEdge();
-    }
+    // Clock input on PD1 is disabled - process MIDI clock only
     if (midi.readable()) {
       uint8_t byte = midi.ImmediateRead();
       if (byte == 0xf8) {			// MIDI Clock message
@@ -443,7 +469,9 @@ void ScanPots() {
 
 void Init() {
   sei();
-  UCSR0B = 0;
+  
+  // Initialize MIDI OUT (TX on PD1)
+  grids::MidiDevice::Init();
   
   leds.set_mode(DIGITAL_OUTPUT);
   inputs.set_mode(DIGITAL_INPUT);
@@ -456,6 +484,8 @@ void Init() {
   Adc::set_alignment(ADC_LEFT_ALIGNED);
   pattern_generator.Init();
   shift_register.Init();
+  
+  // Initialize MIDI IN for clock sync
   midi.Init();
   
   TCCR2A = _BV(WGM21);
@@ -471,5 +501,14 @@ int main(void) {
   while (1) {
     // Use any spare cycles to read the CVs and update the potentiometers
     ScanPots();
+    
+    // Transmit MIDI messages from the buffer (non-blocking)
+    cli(); // Disable interrupts to safely check buffer state
+    bool has_messages = (grids::buffer_tail != grids::buffer_head);
+    sei(); // Re-enable interrupts
+    
+    if (has_messages) {
+      grids::MidiDevice::SendBuffer();
+    }
   }
 }

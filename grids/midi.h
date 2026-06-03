@@ -74,21 +74,27 @@ namespace grids
       Buffer(c);
     }
 
-    // Buffer a MIDI note
-    static inline void BufferNote(uint8_t channel, uint8_t note, uint8_t velocity)
+    // Buffer a MIDI Note On
+    static inline void BufferNoteOn(uint8_t channel, uint8_t note, uint8_t velocity)
     {
       BufferMidiMessage(0x90 | channel, note, velocity);
+    }
+    
+    // Buffer a MIDI Note Off
+    static inline void BufferNoteOff(uint8_t channel, uint8_t note)
+    {
+      BufferMidiMessage(0x80 | channel, note, 0);
     }
 
     // Buffer All Notes Off for a specific channel
     static inline void BufferAllNotesOff(uint8_t channel)
     {
-      BufferMidiMessage(0x80 | channel, BD_NOTE, 0);
-      BufferMidiMessage(0x80 | channel, SD_NOTE, 0);
-      BufferMidiMessage(0x80 | channel, HH_NOTE, 0);
-      BufferMidiMessage(0x80 | channel, BD_ACCENT_NOTE, 0);
-      BufferMidiMessage(0x80 | channel, SD_ACCENT_NOTE, 0);
-      BufferMidiMessage(0x80 | channel, HH_ACCENT_NOTE, 0);
+      BufferNoteOff(channel, BD_NOTE);
+      BufferNoteOff(channel, SD_NOTE);
+      BufferNoteOff(channel, HH_NOTE);
+      BufferNoteOff(channel, BD_ACCENT_NOTE);
+      BufferNoteOff(channel, SD_ACCENT_NOTE);
+      BufferNoteOff(channel, HH_ACCENT_NOTE);
     }
 
   };

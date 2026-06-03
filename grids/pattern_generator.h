@@ -228,6 +228,18 @@ class PatternGenerator {
     return result;
   }
   
+  static inline uint8_t rising_edges() {
+    return state_ & ~previous_state_;
+  }
+  
+  static inline uint8_t falling_edges() {
+    return (~state_) & previous_state_;
+  }
+  
+  static inline void UpdatePreviousState() {
+    previous_state_ = state_;
+  }
+  
  private:
   static void LoadSettings();
   static void Evaluate();
@@ -249,6 +261,7 @@ class PatternGenerator {
   static bool beat_;
   
   static uint8_t state_;
+  static uint8_t previous_state_;
   static uint8_t part_perturbation_[kNumParts];
 
   static uint8_t pulse_duration_counter_;

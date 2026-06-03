@@ -147,57 +147,73 @@ inline void UpdateLeds() {
   leds.Write(pattern);
 }
 
-inline void BufferMidiMessages(uint8_t state)
+inline void BufferMidiMessages(uint8_t state, uint8_t rising, uint8_t falling)
 {
-  if (state & 0x01)
-  { // BD
-    grids::MidiDevice::BufferNote(grids::MIDI_CHANNEL, grids::BD_NOTE, 0x7f);
+  // Note On messages (rising edges with velocity based on accents)
+  if (rising & 0x01) { // BD
+    uint8_t velocity = (state & 0x08) ? 120 : 90;
+    grids::MidiDevice::BufferNoteOn(grids::MIDI_CHANNEL, grids::BD_NOTE, velocity);
   }
-  if (state & 0x02)
-  { // SD
-    grids::MidiDevice::BufferNote(grids::MIDI_CHANNEL, grids::SD_NOTE, 0x7f);
+  if (rising & 0x02) { // SD
+    uint8_t velocity = (state & 0x10) ? 120 : 90;
+    grids::MidiDevice::BufferNoteOn(grids::MIDI_CHANNEL, grids::SD_NOTE, velocity);
   }
-  if (state & 0x04)
-  { // HH
-    if (state & 0x20)
-    {
-      grids::MidiDevice::BufferNote(grids::MIDI_CHANNEL, grids::HH_ACCENT_NOTE, 0x7f);
+  if (rising & 0x04) { // HH - check accent bit only on rising edge
+    uint8_t velocity = (state & 0x20) ? 120 : 90;
+    uint8_t note = (state & 0x20) ? grids::HH_ACCENT_NOTE : grids::HH_NOTE;
+    grids::MidiDevice::BufferNoteOn(grids::MIDI_CHANNEL, note, velocity);
+  }
+  
+  // Note Off messages (falling edges) - only in gate mode
+  if (pattern_generator.gate_mode()) {
+    if (falling & 0x01) {
+      grids::MidiDevice::BufferNoteOff(grids::MIDI_CHANNEL, grids::BD_NOTE);
     }
-    else
-    {
-      grids::MidiDevice::BufferNote(grids::MIDI_CHANNEL, grids::HH_NOTE, 0x7f);
+    if (falling & 0x02) {
+      grids::MidiDevice::BufferNoteOff(grids::MIDI_CHANNEL, grids::SD_NOTE);
+    }
+    if (falling & 0x04) {
+      // Note off for both normal and accent HH
+      grids::MidiDevice::BufferNoteOff(grids::MIDI_CHANNEL, grids::HH_NOTE);
+      grids::MidiDevice::BufferNoteOff(grids::MIDI_CHANNEL, grids::HH_ACCENT_NOTE);
     }
   }
 }
 
 inline void UpdateShiftRegister() {
-  static uint8_t previous_state = 0;
   uint8_t state = pattern_generator.state();
+  uint8_t rising = pattern_generator.rising_edges();
+  uint8_t falling = pattern_generator.falling_edges();
+  
   if (mute) {
-    state &= ~(0x07);						// clear drum bits (BD, SD, HH)
+    state &= ~(0x07);  // clear drum bits (BD, SD, HH)
     if (pattern_generator.output_mode() == OUTPUT_MODE_DRUMS) {
       if (pattern_generator.output_clock()) {
-        state &= ~(OUTPUT_BIT_COMMON);		// clear common accent bit
+        state &= ~(OUTPUT_BIT_COMMON);  // clear common accent bit
       } else {
-        state &= ~(0x07 << 3);				// clear all 3 accent bits
+        state &= ~(0x07 << 3);  // clear all 3 accent bits
       }
     }
+    rising = 0;  // No MIDI triggers when muted
+    falling = 0;
   }
-  if (state != previous_state) {
-    previous_state = state;
-    shift_register.Write(state);
-    
-    // Buffer MIDI messages for triggers
-    BufferMidiMessages(state);
-    
-    if (!state) {
-      // Switch off the LEDs, but not now.
-      led_off_timer = 200;
-    } else {
-      // Switch on the LEDs with a new pattern.
-      led_pattern = pattern_generator.led_pattern();
-      led_off_timer = 0;
-    }
+  
+  // Buffer MIDI messages based on edges
+  BufferMidiMessages(state, rising, falling);
+  
+  // Update previous state for next edge detection
+  pattern_generator.UpdatePreviousState();
+  
+  // Write to shift register
+  shift_register.Write(state);
+  
+  if (!state) {
+    // Switch off the LEDs, but not now.
+    led_off_timer = 200;
+  } else {
+    // Switch on the LEDs with a new pattern.
+    led_pattern = pattern_generator.led_pattern();
+    led_off_timer = 0;
   }
 }
 
@@ -473,6 +489,10 @@ void Init() {
   // Initialize MIDI OUT (TX on PD1)
   grids::MidiDevice::Init();
   
+  // Ensure PD1 is configured as output and set high (idle state)
+  DDRD |= (1 << 1);
+  PORTD |= (1 << 1);
+  
   leds.set_mode(DIGITAL_OUTPUT);
   inputs.set_mode(DIGITAL_INPUT);
   inputs.EnablePullUpResistors();
@@ -503,12 +523,6 @@ int main(void) {
     ScanPots();
     
     // Transmit MIDI messages from the buffer (non-blocking)
-    cli(); // Disable interrupts to safely check buffer state
-    bool has_messages = (grids::buffer_tail != grids::buffer_head);
-    sei(); // Re-enable interrupts
-    
-    if (has_messages) {
-      grids::MidiDevice::SendBuffer();
-    }
+    grids::MidiDevice::SendBuffer();
   }
 }

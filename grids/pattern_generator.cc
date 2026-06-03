@@ -52,6 +52,9 @@ uint8_t PatternGenerator::euclidean_step_[kNumParts];
 uint8_t PatternGenerator::state_;
 
 /* static */
+uint8_t PatternGenerator::previous_state_;
+
+/* static */
 uint8_t PatternGenerator::pulse_duration_counter_;
 
 /* static */

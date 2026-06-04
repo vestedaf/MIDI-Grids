@@ -13,10 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-AVRLIB_TOOLS_PATH ?= /usr/local/CrossPack-AVR/bin/
+AVRLIB_TOOLS_PATH ?= 
 BUILD_ROOT     = build/
 BUILD_DIR      = $(BUILD_ROOT)$(TARGET)/
-PROGRAMMER     ?= avrispmkII
+PROGRAMMER     ?= usbasp
 PROGRAMMER_PORT ?= usb
 AVRDUDE_ERASE  ?= no
 AVRDUDE_LOCK   ?= yes

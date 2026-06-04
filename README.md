@@ -21,6 +21,10 @@ This approach avoids pin remapping and bit-banged output, providing stable timin
   * Long-press TAP again to save and exit
   * Bank selection persists in EEPROM across power cycles
 
+## To Do:
+* MIDI ch10 to gates
+* Accept outs become velocity out
+
 # Gritty Grids - An Improved MIDI Implementation for Grids
 Grids is a topographic (drum) sequencer for Eurorack modular synthesizers 
 developed by Mutable Instruments.

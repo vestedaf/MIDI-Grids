@@ -421,6 +421,8 @@ ISR(TIMER2_COMPA_vect, ISR_NOBLOCK) {
 }
 
 static int16_t pot_values[8];
+static uint8_t tempo_soft_takeover = 0;  // 0 = normal, 1 = waiting for takeover
+static uint8_t previous_tempo_value = 120;  // Store tempo before entering settings
 
 void ScanPots() {
   if (long_press_detected) {
@@ -429,8 +431,12 @@ void ScanPots() {
       for (uint8_t i = 0; i < 8; ++i) {
         pot_values[i] = adc.Read8(i);
       }
+      // Store current tempo value for soft takeover
+      previous_tempo_value = adc.Read8(ADC_CHANNEL_TEMPO);
       parameter = PARAMETER_WAITING;
     } else {
+      // Exiting settings mode - enable soft takeover for tempo
+      tempo_soft_takeover = 1;
       parameter = PARAMETER_NONE;
       pattern_generator.SaveSettings();
     }
@@ -438,10 +444,24 @@ void ScanPots() {
   }
   
   if (parameter == PARAMETER_NONE) {
-    uint8_t bpm = adc.Read8(ADC_CHANNEL_TEMPO);
-    bpm = U8U8MulShift8(bpm, 220) + 20;
-    if (bpm != clock.bpm() && !clock.locked()) {
-      clock.Update(bpm, pattern_generator.clock_resolution());
+    uint8_t tempo_pot = adc.Read8(ADC_CHANNEL_TEMPO);
+    
+    // Soft takeover logic: only update tempo after pot crosses previous value
+    if (tempo_soft_takeover) {
+      int16_t delta = tempo_pot - previous_tempo_value;
+      if (delta < 0) delta = -delta;
+      
+      // If pot is within 5 units of previous value, takeover is complete
+      if (delta < 5) {
+        tempo_soft_takeover = 0;
+      }
+    }
+    
+    if (!tempo_soft_takeover) {
+      uint8_t bpm = U8U8MulShift8(tempo_pot, 220) + 20;
+      if (bpm != clock.bpm() && !clock.locked()) {
+        clock.Update(bpm, pattern_generator.clock_resolution());
+      }
     }
     PatternGeneratorSettings* settings = pattern_generator.mutable_settings();
     settings->options.drums.x = ~adc.Read8(ADC_CHANNEL_X_CV);

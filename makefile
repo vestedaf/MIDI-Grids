@@ -13,7 +13,11 @@
 
 VERSION        = 0.1
 MCU_NAME       = 328
-TARGET         = grids
+
+# Set target to midi-grids so everything builds under this namespace
+TARGET         = midi-grids
+BUILD_DIR      = hex/
+
 PACKAGES       = avrlib avrlib/devices grids
 RESOURCES      = grids/resources
 SYSEX_FLAGS    = --page_size=64 --device_id=9
@@ -39,6 +43,6 @@ bootstrap_all:
 		make -f grids/bootloader/makefile
 		make -f grids/bootloader/makefile fuses
 		$(AVRDUDE) -B 1 $(AVRDUDE_COM_OPTS) $(AVRDUDE_ISP_OPTS) \
-			-U flash:w:build/grids/grids.hex:i \
+			-U flash:w:hex/midi-grids.hex:i \
 			-U flash:w:build/grids_bootloader/grids_bootloader.hex:i \
 			-U lock:w:0x2f:m

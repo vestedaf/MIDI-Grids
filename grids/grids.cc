@@ -446,13 +446,14 @@ void ScanPots() {
   if (parameter == PARAMETER_NONE) {
     uint8_t tempo_pot = adc.Read8(ADC_CHANNEL_TEMPO);
     
-    // Soft takeover logic: only update tempo after pot crosses previous value
+    // Soft takeover logic: only update tempo after pot returns to previous value
     if (tempo_soft_takeover) {
       int16_t delta = tempo_pot - previous_tempo_value;
       if (delta < 0) delta = -delta;
       
-      // If pot is within 5 units of previous value, takeover is complete
-      if (delta < 5) {
+      // If pot is within 2 units of previous value, takeover is complete
+      // (2 units allows for ADC noise while being precise enough for position 0)
+      if (delta <= 2) {
         tempo_soft_takeover = 0;
       }
     }

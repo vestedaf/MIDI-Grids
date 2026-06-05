@@ -450,6 +450,86 @@ void ScanPots() {
     settings->density[0] = ~adc.Read8(ADC_CHANNEL_BD_DENSITY_CV);
     settings->density[1] = ~adc.Read8(ADC_CHANNEL_SD_DENSITY_CV);
     settings->density[2] = ~adc.Read8(ADC_CHANNEL_HH_DENSITY_CV);
+  } else if (parameter == PARAMETER_WAITING) {
+    // In settings mode waiting state, continuously read tempo pot for bank selection
+    uint8_t tempo_value = adc.Read8(ADC_CHANNEL_TEMPO);
+    uint8_t new_bank;
+    if (tempo_value < 85) {
+      new_bank = 0;
+    } else if (tempo_value < 170) {
+      new_bank = 1;
+    } else {
+      new_bank = 2;
+    }
+    if (new_bank != pattern_generator.bank()) {
+      pattern_generator.set_bank(new_bank);
+    }
+    // Always show bank parameter in waiting state
+    parameter = PARAMETER_BANK;
+  } else if (parameter == PARAMETER_BANK) {
+    // Continue reading tempo pot for bank selection
+    uint8_t tempo_value = adc.Read8(ADC_CHANNEL_TEMPO);
+    uint8_t new_bank;
+    if (tempo_value < 85) {
+      new_bank = 0;
+    } else if (tempo_value < 170) {
+      new_bank = 1;
+    } else {
+      new_bank = 2;
+    }
+    if (new_bank != pattern_generator.bank()) {
+      pattern_generator.set_bank(new_bank);
+    }
+    
+    // Check if any other pot has moved to switch to that parameter
+    for (uint8_t i = 0; i < 8; ++i) {
+      if (i == ADC_CHANNEL_TEMPO) continue; // Skip tempo pot
+      int16_t value = adc.Read8(i);
+      int16_t delta = value - pot_values[i];
+      if (delta < 0) {
+        delta = -delta;
+      }
+      if (delta > 32) {
+        pot_values[i] = value;
+        switch (i) {
+          case ADC_CHANNEL_BD_DENSITY_CV:
+            parameter = PARAMETER_CLOCK_RESOLUTION;
+            pattern_generator.set_clock_resolution((255 - value) >> 6);
+            clock.Update(clock.bpm(), pattern_generator.clock_resolution());
+            pattern_generator.Reset();
+            break;
+            
+          case ADC_CHANNEL_SD_DENSITY_CV:
+            parameter = PARAMETER_TAP_TEMPO;
+            pattern_generator.set_tap_tempo(!(value & 0x80));
+            if (!pattern_generator.tap_tempo()) {
+              clock.Unlock();
+            }
+            break;
+
+          case ADC_CHANNEL_HH_DENSITY_CV:
+            parameter = PARAMETER_SWING;
+            pattern_generator.set_swing(!(value & 0x80));
+            break;
+
+          case ADC_CHANNEL_X_CV:
+            parameter = PARAMETER_OUTPUT_MODE;
+            pattern_generator.set_output_mode(!(value & 0x80) ? 1 : 0);
+            break;
+
+          case ADC_CHANNEL_Y_CV:
+            parameter = PARAMETER_GATE_MODE;
+            pattern_generator.set_gate_mode(!(value & 0x80));
+            break;
+
+          case ADC_CHANNEL_RANDOMNESS_CV:
+            parameter = PARAMETER_CLOCK_OUTPUT;
+            pattern_generator.set_output_clock(!(value & 0x80));
+            break;
+        }
+        break; // Exit loop after finding first changed pot
+      }
+    }
   } else {
     for (uint8_t i = 0; i < 8; ++i) {
       int16_t value = adc.Read8(i);
@@ -493,19 +573,6 @@ void ScanPots() {
           case ADC_CHANNEL_RANDOMNESS_CV:
             parameter = PARAMETER_CLOCK_OUTPUT;
             pattern_generator.set_output_clock(!(value & 0x80));
-            break;
-          
-          case ADC_CHANNEL_TEMPO:
-            parameter = PARAMETER_BANK;
-            // Map pot value to bank 0, 1, or 2
-            // 0-84 = bank 0, 85-169 = bank 1, 170-255 = bank 2
-            if (value < 85) {
-              pattern_generator.set_bank(0);
-            } else if (value < 170) {
-              pattern_generator.set_bank(1);
-            } else {
-              pattern_generator.set_bank(2);
-            }
             break;
         }
       }

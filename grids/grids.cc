@@ -498,8 +498,16 @@ void ScanPots() {
           case ADC_CHANNEL_TEMPO:
             parameter = PARAMETER_BANK;
             // Map pot value to bank 0, 1, or 2
-            // Low pot value (0) = bank 0, high pot value (255) = bank 2
-            pattern_generator.set_bank(value / 85);
+            // 0-84 = bank 0, 85-169 = bank 1, 170-255 = bank 2
+            uint8_t bank;
+            if (value < 85) {
+              bank = 0;
+            } else if (value < 170) {
+              bank = 1;
+            } else {
+              bank = 2;
+            }
+            pattern_generator.set_bank(bank);
             break;
             
         }

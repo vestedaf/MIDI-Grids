@@ -471,8 +471,8 @@ void ScanPots() {
     settings->density[0] = ~adc.Read8(ADC_CHANNEL_BD_DENSITY_CV);
     settings->density[1] = ~adc.Read8(ADC_CHANNEL_SD_DENSITY_CV);
     settings->density[2] = ~adc.Read8(ADC_CHANNEL_HH_DENSITY_CV);
-  } else if (parameter == PARAMETER_WAITING) {
-    // In settings mode waiting state, continuously read tempo pot for bank selection
+  } else if (parameter == PARAMETER_WAITING || parameter == PARAMETER_BANK) {
+    // In settings mode, continuously read tempo pot for bank selection
     uint8_t tempo_value = adc.Read8(ADC_CHANNEL_TEMPO);
     uint8_t new_bank;
     // Tempo pot is NOT inverted, so high ADC value = low physical position
@@ -486,26 +486,10 @@ void ScanPots() {
     } else {
       new_bank = 0;
     }
-    if (new_bank != pattern_generator.bank()) {
-      pattern_generator.set_bank(new_bank);
-    }
-    // Always show bank parameter in waiting state
+    pattern_generator.set_bank(new_bank);
+    
+    // Show bank selection
     parameter = PARAMETER_BANK;
-  } else if (parameter == PARAMETER_BANK) {
-    // Continue reading tempo pot for bank selection
-    uint8_t tempo_value = adc.Read8(ADC_CHANNEL_TEMPO);
-    uint8_t new_bank;
-    // Tempo pot is NOT inverted, so high ADC value = low physical position
-    if (tempo_value > 170) {
-      new_bank = 2;
-    } else if (tempo_value > 85) {
-      new_bank = 1;
-    } else {
-      new_bank = 0;
-    }
-    if (new_bank != pattern_generator.bank()) {
-      pattern_generator.set_bank(new_bank);
-    }
     
     // Check if any other pot has moved to switch to that parameter
     for (uint8_t i = 0; i < 8; ++i) {

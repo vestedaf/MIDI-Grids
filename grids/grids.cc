@@ -450,6 +450,28 @@ void ScanPots() {
     settings->density[0] = ~adc.Read8(ADC_CHANNEL_BD_DENSITY_CV);
     settings->density[1] = ~adc.Read8(ADC_CHANNEL_SD_DENSITY_CV);
     settings->density[2] = ~adc.Read8(ADC_CHANNEL_HH_DENSITY_CV);
+    
+    // Bank selection - read continuously in normal mode
+    uint8_t bank_pot = adc.Read8(ADC_CHANNEL_TEMPO);
+    uint8_t bank;
+    if (bank_pot < 85) {
+      bank = 0;
+    } else if (bank_pot < 170) {
+      bank = 1;
+    } else {
+      bank = 2;
+    }
+    if (bank != pattern_generator.bank()) {
+      pattern_generator.set_bank(bank);
+      // Show bank change on LEDs briefly
+      parameter = PARAMETER_BANK;
+      led_off_timer = 100;  // Show for a short time
+    }
+  } else if (parameter == PARAMETER_BANK) {
+    // In bank display mode, return to normal after timer expires
+    if (led_off_timer == 0) {
+      parameter = PARAMETER_NONE;
+    }
   } else {
     for (uint8_t i = 0; i < 8; ++i) {
       int16_t value = adc.Read8(i);
@@ -494,22 +516,6 @@ void ScanPots() {
             parameter = PARAMETER_CLOCK_OUTPUT;
             pattern_generator.set_output_clock(!(value & 0x80));
             break;
-          
-          case ADC_CHANNEL_TEMPO:
-            parameter = PARAMETER_BANK;
-            // Map pot value to bank 0, 1, or 2
-            // 0-84 = bank 0, 85-169 = bank 1, 170-255 = bank 2
-            uint8_t bank;
-            if (value < 85) {
-              bank = 0;
-            } else if (value < 170) {
-              bank = 1;
-            } else {
-              bank = 2;
-            }
-            pattern_generator.set_bank(bank);
-            break;
-            
         }
       }
     }

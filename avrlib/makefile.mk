@@ -296,12 +296,12 @@ fuses:
 
 bootstrap: bake
 
-bake:	$(FIRMWARE)
+bake:	$(TARGET_HEX)
 		$(AVRDUDE) $(AVRDUDE_COM_OPTS) $(AVRDUDE_ISP_OPTS) -B 10 -e \
 			-U efuse:w:0x$(EFUSE):m \
 			-U hfuse:w:0x$(HFUSE):m \
 			-U lfuse:w:0x$(LFUSE):m \
 			-U lock:w:0x$(LOCK):m
 		$(AVRDUDE) $(AVRDUDE_COM_OPTS) $(AVRDUDE_ISP_OPTS) -B 1 \
-			-U flash:w:build/midi-grids.hex:i -U lock:w:0x$(LOCK):m
+			-U flash:w:$(TARGET_HEX):i -U lock:w:0x$(LOCK):m
 

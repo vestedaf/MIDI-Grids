@@ -475,12 +475,16 @@ void ScanPots() {
     // In settings mode waiting state, continuously read tempo pot for bank selection
     uint8_t tempo_value = adc.Read8(ADC_CHANNEL_TEMPO);
     uint8_t new_bank;
-    if (tempo_value < 85) {
-      new_bank = 0;
-    } else if (tempo_value < 170) {
+    // Tempo pot is NOT inverted, so high ADC value = low physical position
+    // Physical knob left (min) = ADC ~255 = bank 2
+    // Physical knob middle = ADC ~127 = bank 1  
+    // Physical knob right (max) = ADC ~0 = bank 0
+    if (tempo_value > 170) {
+      new_bank = 2;
+    } else if (tempo_value > 85) {
       new_bank = 1;
     } else {
-      new_bank = 2;
+      new_bank = 0;
     }
     if (new_bank != pattern_generator.bank()) {
       pattern_generator.set_bank(new_bank);
@@ -491,12 +495,13 @@ void ScanPots() {
     // Continue reading tempo pot for bank selection
     uint8_t tempo_value = adc.Read8(ADC_CHANNEL_TEMPO);
     uint8_t new_bank;
-    if (tempo_value < 85) {
-      new_bank = 0;
-    } else if (tempo_value < 170) {
+    // Tempo pot is NOT inverted, so high ADC value = low physical position
+    if (tempo_value > 170) {
+      new_bank = 2;
+    } else if (tempo_value > 85) {
       new_bank = 1;
     } else {
-      new_bank = 2;
+      new_bank = 0;
     }
     if (new_bank != pattern_generator.bank()) {
       pattern_generator.set_bank(new_bank);

@@ -146,8 +146,14 @@ inline void UpdateLeds() {
         break;
       
       case PARAMETER_BANK:
-        // Show bank number using LEDs: 1=BD, 2=SD, 3=HH
-        pattern |= (LED_BD << pattern_generator.bank());
+        // Show bank number using LEDs: bank 0=BD, bank 1=SD, bank 2=HH
+        if (pattern_generator.bank() == 0) {
+          pattern |= LED_BD;
+        } else if (pattern_generator.bank() == 1) {
+          pattern |= LED_SD;
+        } else if (pattern_generator.bank() == 2) {
+          pattern |= LED_HH;
+        }
         break;
     }
   }
@@ -492,7 +498,8 @@ void ScanPots() {
           case ADC_CHANNEL_TEMPO:
             parameter = PARAMETER_BANK;
             // Map pot value to bank 0, 1, or 2
-            pattern_generator.set_bank((255 - value) / 85);
+            // Low pot value (0) = bank 0, high pot value (255) = bank 2
+            pattern_generator.set_bank(value / 85);
             break;
             
         }

@@ -475,19 +475,22 @@ void ScanPots() {
   } else if (parameter == PARAMETER_BANK) {
     // In bank selection mode, continuously read tempo pot
     uint8_t tempo_value = adc.Read8(ADC_CHANNEL_TEMPO);
+    
+    // Tempo pot: physical left = ADC 255, physical right = ADC 0
+    // We want: left = bank 0 (BD), middle = bank 1 (SD), right = bank 2 (HH)
+    // So we need to invert: 255-tempo_value gives us 0-255 range where
+    // physical left = 0, physical right = 255
+    uint8_t inverted = 255 - tempo_value;
     uint8_t new_bank;
-    // Tempo pot is NOT inverted, so high ADC value = low physical position
-    // Reverse the mapping so turning right increases bank number:
-    // Physical knob left (min) = ADC ~255 = bank 0 = BD LED
-    // Physical knob middle = ADC ~127 = bank 1 = SD LED
-    // Physical knob right (max) = ADC ~0 = bank 2 = HH LED
-    if (tempo_value > 170) {
-      new_bank = 0;
-    } else if (tempo_value > 85) {
-      new_bank = 1;
+    
+    if (inverted < 85) {
+      new_bank = 0;  // Left third = bank 0 = BD LED
+    } else if (inverted < 170) {
+      new_bank = 1;  // Middle third = bank 1 = SD LED
     } else {
-      new_bank = 2;
+      new_bank = 2;  // Right third = bank 2 = HH LED
     }
+    
     pattern_generator.set_bank(new_bank);
     
     // Check if any other pot has moved to switch to that parameter

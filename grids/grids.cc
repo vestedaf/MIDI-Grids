@@ -478,17 +478,16 @@ void ScanPots() {
     
     // Tempo pot: physical left = ADC 255, physical right = ADC 0
     // We want: left = bank 0 (BD), middle = bank 1 (SD), right = bank 2 (HH)
-    // So we need to invert: 255-tempo_value gives us 0-255 range where
-    // physical left = 0, physical right = 255
-    uint8_t inverted = 255 - tempo_value;
+    // Use the raw ADC value directly (high value = left = bank 2, low value = right = bank 0)
+    // Then reverse the bank assignment
     uint8_t new_bank;
     
-    if (inverted < 85) {
-      new_bank = 0;  // Left third = bank 0 = BD LED
-    } else if (inverted < 170) {
-      new_bank = 1;  // Middle third = bank 1 = SD LED
+    if (tempo_value > 170) {
+      new_bank = 0;  // Left third (ADC 255-171) = bank 0 = BD LED
+    } else if (tempo_value > 85) {
+      new_bank = 1;  // Middle third (ADC 170-86) = bank 1 = SD LED
     } else {
-      new_bank = 2;  // Right third = bank 2 = HH LED
+      new_bank = 2;  // Right third (ADC 85-0) = bank 2 = HH LED
     }
     
     pattern_generator.set_bank(new_bank);

@@ -16,7 +16,7 @@ MCU_NAME       = 328
 
 # Set target to midi-grids so everything builds under this namespace
 TARGET         = midi-grids
-BUILD_DIR      = hex/
+BUILD_DIR      = build/midi-grids/
 
 PACKAGES       = avrlib avrlib/devices grids
 RESOURCES      = grids/resources

@@ -75,6 +75,31 @@ uint8_t PatternGenerator::bank_;
 /* extern */
 PatternGenerator pattern_generator;
 
+// Three banks of drum patterns - each bank uses a different arrangement of nodes
+static const prog_uint8_t* drum_map_bank0[5][5] = {
+  { node_0, node_1, node_2, node_3, node_4 },
+  { node_5, node_6, node_7, node_8, node_9 },
+  { node_10, node_11, node_12, node_13, node_14 },
+  { node_15, node_16, node_17, node_18, node_19 },
+  { node_20, node_21, node_22, node_23, node_24 },
+};
+
+static const prog_uint8_t* drum_map_bank1[5][5] = {
+  { node_10, node_8, node_0, node_9, node_11 },
+  { node_15, node_7, node_13, node_12, node_6 },
+  { node_18, node_14, node_4, node_5, node_3 },
+  { node_23, node_16, node_21, node_1, node_2 },
+  { node_24, node_19, node_17, node_20, node_22 },
+};
+
+static const prog_uint8_t* drum_map_bank2[5][5] = {
+  { node_24, node_23, node_22, node_21, node_20 },
+  { node_19, node_18, node_17, node_16, node_15 },
+  { node_14, node_13, node_12, node_11, node_10 },
+  { node_9, node_8, node_7, node_6, node_5 },
+  { node_4, node_3, node_2, node_1, node_0 },
+};
+
 static const prog_uint8_t* drum_map[5][5] = {
   { node_10, node_8, node_0, node_9, node_11 },
   { node_15, node_7, node_13, node_12, node_6 },
@@ -91,10 +116,21 @@ uint8_t PatternGenerator::ReadDrumMap(
     uint8_t y) {
   uint8_t i = x >> 6;
   uint8_t j = y >> 6;
-  const prog_uint8_t* a_map = drum_map[i][j];
-  const prog_uint8_t* b_map = drum_map[i + 1][j];
-  const prog_uint8_t* c_map = drum_map[i][j + 1];
-  const prog_uint8_t* d_map = drum_map[i + 1][j + 1];
+  
+  // Select the appropriate drum map based on bank
+  const prog_uint8_t* (*current_map)[5];
+  if (bank_ == 0) {
+    current_map = drum_map_bank0;
+  } else if (bank_ == 1) {
+    current_map = drum_map_bank1;
+  } else {
+    current_map = drum_map_bank2;
+  }
+  
+  const prog_uint8_t* a_map = current_map[i][j];
+  const prog_uint8_t* b_map = current_map[i + 1][j];
+  const prog_uint8_t* c_map = current_map[i][j + 1];
+  const prog_uint8_t* d_map = current_map[i + 1][j + 1];
   uint8_t offset = (instrument * kStepsPerPattern) + step;
   uint8_t a = pgm_read_byte(a_map + offset);
   uint8_t b = pgm_read_byte(b_map + offset);

@@ -49,6 +49,12 @@ enum InputBits {
   INPUT_SW_RESET = 8
 };
 
+// MIDI Configuration                                                                                                             
+const uint8_t MIDI_CHANNEL = 9;  // MIDI channel 10 (0-indexed)                                                                    
+const uint8_t BD_NOTE = 36;      // Bass Drum (C1) - GM standard                                                                  
+const uint8_t SD_NOTE = 38;      // Snare Drum (D1) - GM standard                                                             
+const uint8_t HH_NOTE = 42;      // Closed Hi-Hat (F#1) - GM standard
+
 using avrlib::Gpio;
 using avrlib::ParallelPort;
 using avrlib::PortB;

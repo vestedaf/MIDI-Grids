@@ -476,9 +476,11 @@ void ScanPots() {
     // In bank selection mode, continuously read tempo pot
     uint8_t tempo_value = adc.Read8(ADC_CHANNEL_TEMPO);
     
+    // Update the frozen tempo value so it doesn't trigger a parameter change
+    pot_values[ADC_CHANNEL_TEMPO] = tempo_value;
+    
     // Tempo pot: physical left = ADC 255, physical right = ADC 0
     // We want: left = bank 0 (BD), middle = bank 1 (SD), right = bank 2 (HH)
-    // Since you're seeing LED3 on left and LED1 on right, we need to swap
     uint8_t new_bank;
     
     if (tempo_value > 170) {

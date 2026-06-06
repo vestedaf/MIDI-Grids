@@ -21,7 +21,7 @@ namespace grids
     static inline void Init()
     {
       // Configure UART for MIDI output (31250 baud, 8N1)
-      UBRR0 = 31; // 31250 baud at 16MHz: (16000000 / 16 / 31250) - 1 = 31
+      UBRR0 = 39; // 31250 baud at 20MHz: (20000000 / 16 / 31250) - 1 = 39
       UCSR0A = 0;
       UCSR0B = (1 << TXEN0); // Enable transmitter only
       UCSR0C = (1 << UCSZ01) | (1 << UCSZ00); // 8 data bits, 1 stop bit, no parity
@@ -82,9 +82,7 @@ namespace grids
       BufferNoteOff(channel, BD_NOTE);
       BufferNoteOff(channel, SD_NOTE);
       BufferNoteOff(channel, HH_NOTE);
-      BufferNoteOff(channel, BD_ACCENT_NOTE);
-      BufferNoteOff(channel, SD_ACCENT_NOTE);
-      BufferNoteOff(channel, HH_ACCENT_NOTE);
+      BufferNoteOff(channel, HH_NOTE + 1);  // Open hi-hat
     }
 
   };

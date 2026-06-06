@@ -9,16 +9,6 @@
 namespace grids
 {
 
-  static constexpr uint8_t MIDI_CHANNEL = 9; // channel 10 (channel index 0-15)
-
-  // General MIDI note numbers
-  static uint8_t BD_NOTE = 0x24;        // Kick Drum (Electric Bass Drum)
-  static uint8_t SD_NOTE = 0x26;        // Snare Drum (Acoustic Snare)
-  static uint8_t HH_NOTE = 0x2a;        // Closed Hi-Hat
-  static uint8_t BD_ACCENT_NOTE = 0x24; // Kick Drum (Electric Bass Drum)
-  static uint8_t SD_ACCENT_NOTE = 0x26; // Snare Drum (Acoustic Snare)
-  static uint8_t HH_ACCENT_NOTE = 0x2e; // Open Hi-Hat
-
   // Circular buffer implementation
   static volatile uint8_t output_buffer[MIDI_BUFFER_SIZE];
   static volatile uint8_t buffer_head = 0;

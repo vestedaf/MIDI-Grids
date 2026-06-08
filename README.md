@@ -22,8 +22,12 @@ This approach avoids pin remapping and bit-banged output, providing stable timin
   * Bank selection persists in EEPROM across power cycles
 
 ## To Do:
-* MIDI ch10 to gates
-* Accept outs become velocity out
+* MIDI gates out working in trigger mode (currently gates mode only)
+* What MIDI is being passed through?
+  * What should be passed through?
+* Accent outputs become velocity curve outs (is this possible?)
+  * Toggle in settings
+* MIDI ch10 to gates: midi -> gates (and velocity if above is possible)
 
 # Gritty Grids - An Improved MIDI Implementation for Grids
 Grids is a topographic (drum) sequencer for Eurorack modular synthesizers 
